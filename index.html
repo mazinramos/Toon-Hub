@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TOONHUB - 3D Figurine Carousel</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* CSS Reset & Variables */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      background-color: #F4845F; /* Initial background */
+    }
+
+    /* Main Container */
+    #app-container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      transition: background-color 650ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Grain Overlay */
+    .grain-overlay {
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0.4;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      background-repeat: repeat;
+    }
+
+    /* Giant Ghost Text */
+    .ghost-text-container {
+      position: absolute;
+      left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      user-select: none;
+      z-index: 2;
+      top: 18%;
+    }
+
+    .ghost-text {
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(90px, 28vw, 380px);
+      font-weight: 900;
+      color: white;
+      opacity: 1;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    /* Brand Label */
+    .brand-label {
+      position: absolute;
+      top: 1.5rem;
+      left: 1rem;
+      z-index: 60;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      opacity: 0.9;
+      letter-spacing: 0.18em;
+    }
+
+    @media (min-width: 640px) {
+      .brand-label { left: 2rem; }
+    }
+
+    /* Carousel Items */
+    .carousel-container {
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      z-index: 3;
+    }
+
+    .carousel-item {
+      position: absolute;
+      aspect-ratio: 0.6 / 1;
+      transition: transform 650ms cubic-bezier(0.4, 0, 0.2, 1), 
+                  filter 650ms cubic-bezier(0.4, 0, 0.2, 1), 
+                  opacity 650ms cubic-bezier(0.4, 0, 0.2, 1), 
+                  left 650ms cubic-bezier(0.4, 0, 0.2, 1), 
+                  height 650ms cubic-bezier(0.4, 0, 0.2, 1), 
+                  bottom 650ms cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform, filter, opacity, left, height, bottom;
+    }
+
+    .carousel-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: bottom center;
+    }
+
+    /* Bottom Left Details */
+    .details-container {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 1rem;
+      z-index: 60;
+      max-width: 320px;
+    }
+
+    .details-title {
+      font-weight: 700;
+      text-transform: uppercase;
+      color: white;
+      opacity: 0.95;
+      letter-spacing: 0.02em;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .details-desc {
+      display: none; /* Hidden on mobile by default */
+      color: white;
+      opacity: 0.85;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (min-width: 640px) {
+      .details-container {
+        bottom: 5rem;
+        left: 6rem;
+      }
+      .details-title {
+        font-size: 22px;
+        margin-bottom: 0.75rem;
+      }
+      .details-desc {
+        display: block;
+      }
+    }
+
+    /* Navigation Buttons */
+    .nav-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .nav-btn {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      border: 2px solid white;
+      background-color: transparent;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 150ms, background-color 150ms;
+    }
+
+    .nav-btn:hover {
+      transform: scale(1.08);
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+
+    @media (min-width: 640px) {
+      .nav-btn {
+        width: 4rem;
+        height: 4rem;
+      }
+    }
+
+    /* Bottom Right Link */
+    .discover-link {
+      position: absolute;
+      bottom: 1.5rem;
+      right: 1rem;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      color: white;
+      opacity: 0.95;
+      text-decoration: none;
+      text-transform: uppercase;
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(20px, 4vw, 56px);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      transition: opacity 200ms;
+    }
+
+    .discover-link:hover {
+      opacity: 1;
+    }
+
+    .discover-link svg {
+      margin-left: 0.5rem;
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    @media (min-width: 640px) {
+      .discover-link {
+        bottom: 5rem;
+        right: 2.5rem;
+      }
+      .discover-link svg {
+        margin-left: 1rem;
+        width: 2rem;
+        height: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app-container">
+    
+    <!-- Grain overlay -->
+    <div class="grain-overlay"></div>
+
+    <!-- Giant ghost text -->
+    <div class="ghost-text-container">
+      <span class="ghost-text">3D SHAPE</span>
+    </div>
+
+    <!-- Top-left brand label -->
+    <div class="brand-label">TOONHUB</div>
+
+    <!-- Carousel Items Container -->
+    <div class="carousel-container" id="carousel">
+      <!-- Images will be injected and styled by JS -->
+    </div>
+
+    <!-- Bottom-left text + nav buttons -->
+    <div class="details-container">
+      <p class="details-title">TOONHUB FIGURINES</p>
+      <p class="details-desc">
+        The artwork is stunning, shipped fully prepared. The finish is a vision, the 3D craft is flawless. Many thanks! Wishing you the win. Order now.
+      </p>
+      <div class="nav-buttons">
+        <button class="nav-btn" id="btn-prev" aria-label="Previous slide">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 19-7-7 7-7"/>
+            <path d="M19 12H5"/>
+          </svg>
+        </button>
+        <button class="nav-btn" id="btn-next" aria-label="Next slide">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/>
+            <path d="m12 5 7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom-right link -->
+    <a href="#" class="discover-link">
+      DISCOVER IT
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14"/>
+        <path d="m12 5 7 7-7 7"/>
+      </svg>
+    </a>
+
+  </div>
+
+  <script>
+    // --- Data & State ---
+    const IMAGES = [
+      { src: 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/1.02464a56.png', bg: '#F4845F' },
+      { src: 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/2.b977faab.png', bg: '#6BBF7A' },
+      { src: 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/3.4df853b4.png', bg: '#E882B4' },
+      { src: 'https://fifth-gentle-45902158.figma.site/_components/v2/4de492f6d9cf8244ad5293233e5c6f52407d42fc/4.4457fbce.png', bg: '#6EB5FF' },
+    ];
+
+    let activeIndex = 0;
+    let isAnimating = false;
+    let isMobile = window.innerWidth < 640;
+
+    // --- DOM Elements ---
+    const appContainer = document.getElementById('app-container');
+    const carouselContainer = document.getElementById('carousel');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    let itemElements = [];
+
+    // --- Initialization ---
+    function init() {
+      // 1. Preload Images
+      IMAGES.forEach(imgData => {
+        const img = new Image();
+        img.src = imgData.src;
+      });
+
+      // 2. Create Carousel Items in DOM
+      IMAGES.forEach((imgData, index) => {
+        const div = document.createElement('div');
+        div.className = 'carousel-item';
+        
+        const img = document.createElement('img');
+        img.src = imgData.src;
+        img.alt = `Figurine ${index + 1}`;
+        img.draggable = false;
+        
+        div.appendChild(img);
+        carouselContainer.appendChild(div);
+        itemElements.push(div);
+      });
+
+      // 3. Initial Layout Setup
+      updateCarousel();
+
+      // 4. Event Listeners
+      btnPrev.addEventListener('click', () => navigate('prev'));
+      btnNext.addEventListener('click', () => navigate('next'));
+      window.addEventListener('resize', handleResize);
+    }
+
+    // --- Core Logic ---
+    function navigate(direction) {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      if (direction === 'next') {
+        activeIndex = (activeIndex + 1) % 4;
+      } else {
+        activeIndex = (activeIndex + 3) % 4;
+      }
+
+      updateCarousel();
+
+      // Release animation lock after 650ms (matching CSS transition)
+      setTimeout(() => {
+        isAnimating = false;
+      }, 650);
+    }
+
+    function handleResize() {
+      const newIsMobile = window.innerWidth < 640;
+      if (isMobile !== newIsMobile) {
+        isMobile = newIsMobile;
+        updateCarousel(); // Only update layout if breakpoint is crossed
+      }
+    }
+
+    function updateCarousel() {
+      // Update background color
+      appContainer.style.backgroundColor = IMAGES[activeIndex].bg;
+
+      // Determine roles based on activeIndex
+      const center = activeIndex;
+      const left = (activeIndex + 3) % 4;
+      const right = (activeIndex + 1) % 4;
+      const back = (activeIndex + 2) % 4;
+
+      // Apply styles to each item
+      itemElements.forEach((el, index) => {
+        if (index === center) {
+          applyStyles(el, {
+            transform: `translateX(-50%) scale(${isMobile ? 1.25 : 1.68})`,
+            filter: 'blur(0px)',
+            opacity: '1',
+            zIndex: '20',
+            left: '50%',
+            height: isMobile ? '60%' : '92%',
+            bottom: isMobile ? '22%' : '0'
+          });
+        } else if (index === left) {
+          applyStyles(el, {
+            transform: 'translateX(-50%) scale(1)',
+            filter: 'blur(2px)',
+            opacity: '0.85',
+            zIndex: '10',
+            left: isMobile ? '20%' : '30%',
+            height: isMobile ? '16%' : '28%',
+            bottom: isMobile ? '32%' : '12%'
+          });
+        } else if (index === right) {
+          applyStyles(el, {
+            transform: 'translateX(-50%) scale(1)',
+            filter: 'blur(2px)',
+            opacity: '0.85',
+            zIndex: '10',
+            left: isMobile ? '80%' : '70%',
+            height: isMobile ? '16%' : '28%',
+            bottom: isMobile ? '32%' : '12%'
+          });
+        } else if (index === back) {
+          applyStyles(el, {
+            transform: 'translateX(-50%) scale(1)',
+            filter: 'blur(4px)',
+            opacity: '1',
+            zIndex: '5',
+            left: '50%',
+            height: isMobile ? '13%' : '22%',
+            bottom: isMobile ? '32%' : '12%'
+          });
+        }
+      });
+    }
+
+    // Helper to apply multiple styles
+    function applyStyles(element, styles) {
+      for (const property in styles) {
+        element.style[property] = styles[property];
+      }
+    }
+
+    // Boot
+    init();
+  </script>
+</body>
+</html>
